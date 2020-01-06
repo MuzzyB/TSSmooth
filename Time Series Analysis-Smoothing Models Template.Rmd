@@ -1,0 +1,473 @@
+---
+title: "MinneMUDAC Fall 2019"
+author: "Muuzaani Nkhoma"
+date: "Oct 12, 2019"
+output: html_document
+---
+
+#### Load Packages run once before running the program or as needed
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+library(zoo)
+library(car)
+library(forecast)
+library(fpp)
+
+```
+
+
+
+
+#####a. Read, Explore, and Prepare the data
+
+
+```{r 1.a}
+
+print("Start importing dataset")
+treasurY <- read.csv("Data Time Series/Table B.1 US Treasury Security 10 Yr.csv", header = TRUE, skip = 3)
+print("Finished importing dataset")
+
+dim(treasurY)
+ncol(treasurY)
+nrow(treasurY)
+names(treasurY)
+
+
+```
+
+
+##### View first observations
+
+```{r }
+
+head(treasurY)
+
+```
+
+##### View last observations
+```{r }
+
+tail(treasurY)
+
+```
+
+##### Summary Statistics
+
+```{r }
+
+summary(treasurY)
+
+```
+
+#####b. Create Times Series Data
+
+```{r 1.b}
+
+treasurY.ts <- ts(treasurY$Rate..., start = c(1953, 4), frequency = 12)
+
+```
+
+#####c. Plot Time Series Data
+
+```{r 1.c}
+
+plot.ts(treasurY.ts, type = "o", pch = 16, cex = .5, xlab = 'Year', 
+        ylab = 'Rate', main = "Market Yield on US Treasury Securities at 10-year Constant Maturity")
+#tsdisplay(cheese.ts)
+```
+
+
+
+
+
+#### b.Numerical Analysis
+#####Plot ACF and PACF
+
+```{r 2.b}
+
+par(mfrow=c(1,2),oma=c(0,0,2,0))
+acf(treasurY.ts,lag.max = 25,type = "correlation",  main = "ACF for Model #")
+acf(treasurY.ts, lag.max = 25, type = "partial", main = "PACF for Model #")
+
+```
+
+#####c.1 Transformations
+#####Check for volatility 
+
+```{r 2c1}
+
+treasurY.model<-lm(cheese$Production~cheese$Year) 
+plot(cheese,type="l",xlab='Year',ylab='Production, 10000lb') 
+points(cheese,pch=16,cex=.5) 
+lines(cheese$Year, cheese.model$fit,col="red",lty=2) 
+legend(1990,12000,c("Actual","Fits"), pch=c(16,NA),lwd=c(.5,.5),lty=c(1,2),cex=.55,col=c("black","red"))
+
+```
+
+####c.2.Residual Plots
+#####Check for Nonconstant Variance(Heteroscedasticity)
+
+```{r c.2}
+
+par(mfrow=c(2,2),oma=c(0,0,0,0)) 
+qqnorm(cheese.model$res,datax=TRUE,pch=16,xlab='Residual',main='Normal Q-Q Plot') 
+qqline(cheese.model$res,datax=TRUE) 
+plot(cheese.model$fit,cheese.model$res,pch=16, xlab='Fitted Value', ylab='Residual', main = 'Residuals vs Fitted Plot') 
+abline(h=0) 
+hist(cheese.model$res,col="gray",xlab='Residual',main='Residuals Histogram') 
+plot(cheese.model$res,type="l",xlab='Observation Order', ylab='Residual', main = 'Residuals Plot') 
+points(cheese.model$res,pch=16,cex=.5) 
+abline(h=0)
+
+```
+
+####c.3.Box-Cox Transformation
+
+```{r c.3}
+
+lambda = BoxCox.lambda(cheese.ts)
+cheese.model2 = BoxCox(cheese.ts, lambda=lambda)
+plot.ts(cheese.model2, type = "o", pch = 16, cex = .5, xlab = 'Year', 
+        ylab = 'Production', main = "Transformed Model of\n Us Production of Blue and Gorgonzola Cheese")
+tsdisplay(cheese.model2)
+
+```
+
+####d.1 Trend and Seasonal Adjustments (Differencing)
+#####Detect Trend and Seasonality
+#####d.1.a Decomposition
+
+#####d.1. Decomposition Plot
+
+```{r d.1.b, eval=FALSE}
+
+cheese.ts %>% decompose %>% autoplot
+
+```
+
+#####d.2 Detect Seasonality
+#####d.2.a Seasonal Plot
+
+```{r d.2.a, eval=FALSE}
+
+seasonplot(cheese.ts)
+
+```
+
+#####d.2.b Monthly Plot
+
+```{r d.2.b, eval=FALSE}
+
+monthplot(cheese.ts)
+
+```
+
+#####d.2.c Differencing for Trend and Seasonality
+
+```{r d.2.c, eval=FALSE}
+
+monthplot(cheese.ts)
+
+```
+
+#####d.2.d Fit Seasonal ARIMA Model
+
+```{r d.2.d, eval=FALSE}
+
+monthplot(cheese.ts)
+
+```
+
+#####e. Trend and Seasonal Adjustments (Differencing)
+#####Detect Trend and Nonstationarity
+
+#####e.1 Non-Stationarity
+#####Detect Non-Stationary Data
+
+The stationarity of the data can be known by applying Unit Root Tests - Augmented Dickey-Fuller test (ADF), Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test.
+Augmented Dickey-Fuller test (ADF)
+The null-hypothesis for an ADF test is that the data are non-stationary. So p-value greater than 0.05 indicates non-stationarity, and  p-values less than 0.05 suggest stationarity.
+KPSS Test
+In this case, the null-hypothesis is that the data are stationary. In this case, p-value less than 0.05 indicates non-stationary series and p-value greater than 0.05 indicates stationary series.
+
+```{r e.1}
+
+# Unit Ratio Tests 
+library(tseries)
+adf = adf.test(cheese.ts) 
+kpss = kpss.test(cheese.ts) 
+adf
+kpss
+
+```
+
+#####e.2 How to treat Non-Stationary Data
+
+```{r e.2}
+
+# Number of Differences Required to make data stationary 
+ndiffs(cheese.ts)
+cheese.ts1 = diff(cheese.ts, differences = 2)
+plot.ts(cheese.ts1)
+
+```
+
+
+
+
+###SMOOTHING METHODS
+####1.CONSTANT PROCESS-SIMPLE MOVING AVERAGE
+
+
+
+
+#####d.Simple Moving Average Plot
+
+```{r 1.d}
+
+plot.ts(treasurY.ts, type = "o", pch = 16, cex = .5, xlab = 'Year', 
+        ylab = 'Rate', main = "Market Yield on US Treasury Securities at 10-year Constant \nMaturity with Moving Average Plot")
+treasurY.sma <- ma(treasurY.ts, order=12) # 12 month moving average
+lines(treasurY.sma, col="red") # plot
+
+```
+
+####2.LEVEL PROCESS-SIMPLE EXPONENTIAL SMOOTHING
+
+#####a. Read and prepare the data
+
+```{r 2.a}
+
+fatal <- read.csv("Data Time Series/Table B.25 U.S.Traffic Fatalities.csv")
+
+```
+
+#####b. Create and Plot Times Series Data
+
+```{r 2.b}
+
+fa.ts <- ts(fatal$Fatal, start = 1966, end = 2006)
+plot(fa.ts, ylab = "Fatalities")
+
+```
+
+
+#####c. Simple Exponential Smoothing Plot
+
+```{r 2.c}
+
+fa.sm1 <- HoltWinters(fa.ts, beta = FALSE, gamma = FALSE)
+plot(fa.sm1, ylab = "Fatalities")
+
+```
+
+#####d. one-year-ahead forecasts for 2007 - 2012
+
+```{r 2.d}
+
+fa.fore1 <- forecast(fa.sm1, h = 5)
+plot(fa.fore1)
+fa.fore1
+
+```
+
+#####e Model Performance
+##### checks accuracy of forecast model
+
+```{r 2.e}
+
+fa.ac1 <- accuracy(fa.fore1)
+fa.ac1
+
+```
+
+####3.LEVEL AND TREND PROCESS: DOUBLE EXPONENTIAL SMOOTHING
+
+#####a. Double Exponential Smoothing Plot
+
+```{r 3.a}
+
+fa.sm2 <- HoltWinters(fa.ts, gamma = FALSE)
+plot(fa.sm2, ylab = "Fatalities")
+
+```
+
+#####b. one-year-ahead forecasts for 2007 - 2012
+
+```{r 3.b}
+
+fa.fore2 <- forecast(fa.sm2, h = 5)
+plot(fa.fore2)
+fa.fore2
+
+```
+
+#####c. Model Performance
+#####checks accuracy of forecast model
+
+```{r 3.c}
+
+fa.ac2 <- accuracy(fa.fore2)
+fa.ac2
+
+```
+
+####4.LEVEL, TREND, and SEASONALITY PROCESS: HOLT-WINTERS
+
+
+#####a. Read and prepare the data
+
+```{r 4.a}
+
+bevS <- read.csv("Data Time Series/Table B.5  US Beverage Manufacturer Product Shipments.csv", header = TRUE, skip = 3)
+
+```
+
+
+#####b. Create and Plot Times Series Data
+
+```{r 4.b}
+
+bevS.ts <- ts(bevS$Dollars..in.Millions, start = c(1992, 1), end = c(2006, 12), frequency = 12)
+plot(bevS.ts, ylab = "Shipments")
+
+```
+
+#####c. Double Exponential Smoothing Plot-Additive
+
+```{r 4.c}
+
+bevS.sm1 <- HoltWinters(bevS.ts, seasonal = "additive")
+plot(bevS.sm1, ylab = "Shipments")
+
+```
+
+#####d. Additive one-year-ahead forecasts for 2007 - 2012
+
+```{r 4.d}
+
+bevS.fore1 <- forecast(bevS.sm1, h = 5)
+plot(bevS.fore1)
+bevS.fore1
+
+```
+
+#####e. Model Performance-Additive
+#####checks accuracy of forecast model
+
+```{r 4.e}
+
+bevS.ac1 <- accuracy(bevS.fore1)
+bevS.ac1
+
+```
+
+#####f. Double Exponential Smoothing Plot-Multiplicative
+
+```{r 4.f}
+
+bevS.sm2 <- HoltWinters(bevS.ts, seasonal = "multiplicative")
+plot(bevS.sm2, ylab = "Shipments")
+
+```
+
+
+####5.FIRST-ORDER EXPONENTIAL SMOOTHING
+
+#####a. Read and prepare the data
+
+```{r 5.a}
+
+fatal <- read.csv("Data Time Series/Table B.25 U.S.Traffic Fatalities.csv")
+
+```
+
+#####b. Create and Plot Times Series Data
+
+```{r 5.b}
+
+fatal.ts <- ts(fatal$Fatal, start = 1966, end = 2006)
+plot(fa.ts, ylab = "Fatalities")
+
+```
+#####c. First Order Exponential Smoothing Function
+
+```{r 5.c1}
+
+firstsmooth<-function(y,lambda,start=y[1])
+              { 
+                ytilde <- y 
+                ytilde[1] <- lambda*y[1]+(1-lambda)*start 
+                for (i in 2:length(y))
+                  { 
+                    ytilde[i]<-lambda*y[i]+(1-lambda)*ytilde[i-1] 
+                  }
+                ytilde 
+              }
+
+```
+
+#####c. First Order Exponential Smoothing Plot
+
+```{r 5.c}
+
+fatal.sm1 <- firstsmooth(y = fatal.ts,lambda=0.4)
+plot(fatal.ts,type="p", pch=16, cex=.5,   xlab='Date', ylab = "Fatalities",  xaxt='n')
+lines(fatal.sm1)
+
+```
+
+#####d. one-year-ahead forecasts for 2007 - 2012
+
+```{r 5.d}
+
+fatal.fore1 <- forecast(fatal.sm1, h = 5)
+plot(fatal.fore1)
+fatal.fore1
+
+```
+
+#####e. Model Performance
+#####checks accuracy of forecast model
+
+```{r 5.e}
+
+fatal.ac1 <- accuracy(fatal.fore1)
+fatal.ac1
+
+```
+
+####6.SECOND-ORDER EXPONENTIAL SMOOTHING
+
+#####a. Second-Order Exponential Smoothing Plot
+
+```{r 6.a}
+
+fatal.sm2 <- firstsmooth(y = fatal.sm1,lambda=0.4)
+plot(fatal.ts,type="p", pch=16, cex=.5,   xlab='Date', ylab = "Fatalities",  xaxt='n')
+lines(fatal.sm2)
+
+```
+
+#####d. one-year-ahead forecasts for 2007 - 2012
+
+```{r 6.d}
+
+fatal.fore2 <- forecast(fatal.sm2, h = 5)
+plot(fatal.fore2)
+fatal.fore2
+
+```
+
+#####e. Model Performance
+#####checks accuracy of forecast model
+
+```{r 6.e}
+
+fatal.ac2 <- accuracy(fatal.fore2)
+fatal.ac2
+
+```
+
